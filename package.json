@@ -1,5 +1,5 @@
 {
-  "name": "backbeam-lamda",
+  "name": "backbeam-lambda",
   "version": "0.0.1",
   "description": "Development tools for creating web applications based on AWS lambda",
   "scripts": {
