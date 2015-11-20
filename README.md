@@ -24,7 +24,7 @@ Start a project
 mkdir myproject
 cd myproject
 backbeam-lambda init
-```
+```
 
 Create a new controller
 
