@@ -1,6 +1,6 @@
 {
   "name": "backbeam-lambda",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Development tools for creating web applications based on AWS lambda",
   "scripts": {
     "test": "mocha"
@@ -25,6 +25,7 @@
     "multiline": "^1.0.2",
     "node-errors": "^0.2.0",
     "node-uuid": "^1.4.7",
+    "temp": "^0.8.3",
     "txain": "^0.4.1",
     "underscore": "^1.8.3",
     "yargs": "^3.30.0"

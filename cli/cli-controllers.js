@@ -7,6 +7,7 @@ var inquirer = require('inquirer')
 var multiline = require('multiline')
 var AWS = require('aws-sdk')
 require('colors')
+var temp = require('temp').track()
 
 var configurationKeys = ['timeout', 'memory_size', 'role', 'description']
 
@@ -90,16 +91,29 @@ module.exports = function(yargs) {
     inquirer.prompt(questions, function(answers) {
       txain(function(callback) {
         var filename = path.join(process.cwd(), 'web/controllers/'+answers['function']+'.js')
-        var code = multiline.stripIndent(function() {;/*
-          exports.HANDLER = function(req, res, event, context) {
-            res.send('Hello world')
-          }
-        */}).replace('HANDLER', answers.handler)
+        if (answers.output === 'html') {
+          var code = multiline.stripIndent(function() {;/*
+            var aws = require('aws-sdk')
+
+            exports.HANDLER = function(event, context) {
+              context.succeed({ html: '<h1>hello world</h2>' })
+            }
+          */})
+        } else {
+          var code = multiline.stripIndent(function() {;/*
+            var aws = require('aws-sdk')
+
+            exports.HANDLER = function(event, context) {
+              context.succeed({ message: 'hello world' })
+            }
+          */})
+        }
+        code = code.replace('HANDLER', answers.handler)
         fs.writeFile(filename, code, 'utf-8', callback)
       })
       .then(function(data, callback) {
         var routes = utils.readRoutes()
-        routes.push(_.pick(answers, 'method', 'path', 'function', 'handler'))
+        routes.push(_.pick(answers, 'method', 'path', 'function', 'handler', 'input', 'output'))
         utils.writeRoutes(routes)
         callback()
       })
@@ -178,7 +192,7 @@ module.exports.sync = function(functionName, callback) {
   var parentResource, resourceId
 
   txain(function(callback) {
-    var zipfile = path.join(__dirname, 'foo.zip') // TODO: temp file
+    var zipfile = temp.path({ suffix: '.zip' })
     var filename = path.join(process.cwd(), 'web/controllers/'+controller['function']+'.js')
     var code = fs.readFileSync(filename, 'utf-8')
     var writeStream = fs.createWriteStream(zipfile)
@@ -198,7 +212,7 @@ module.exports.sync = function(functionName, callback) {
             ZipFile: data,
           },
           FunctionName: functionName,
-          Handler: 'index.handler',
+          Handler: 'index.'+route.handler,
           Role: controller.role,
           Runtime: 'nodejs',
           Description: controller.description,
@@ -221,7 +235,7 @@ module.exports.sync = function(functionName, callback) {
           FunctionName: functionName,
           Principal: 'apigateway.amazonaws.com',
           StatementId: uuid.v4(),
-        };
+        }
         lambda.addPermission(params, callback)
       })
       .end(callback)
@@ -275,7 +289,6 @@ module.exports.sync = function(functionName, callback) {
       apigateway.createResource(params, callback)
     })
     .then(function(body, callback) {
-      console.log('body', body)
       parentResource = body
       callback()
     })
@@ -283,7 +296,7 @@ module.exports.sync = function(functionName, callback) {
   })
   .then(function(callback) {
     resourceId = parentResource.id
-    var method = parentResource.resourceMethods[controller.method]
+    var method = parentResource.resourceMethods && parentResource.resourceMethods[controller.method]
 
     txain(function(callback) {
       if (!method) return callback()
@@ -319,7 +332,24 @@ module.exports.sync = function(functionName, callback) {
       requestTemplates: {
         'application/json': multiline.stripIndent(function() {;/*
           {
-            "querystring" : "#foreach($key in $input.params().querystring.keySet())#if($foreach.index > 0)&#end$util.urlEncode($key)=$util.urlEncode($input.params().querystring.get($key))#end",
+            "querystring" : {
+            #foreach($key in $input.params().querystring.keySet())
+              #if($foreach.index > 0), #end
+              "$util.escapeJavaScript($key)": "$util.escapeJavaScript($input.params().querystring.get($key))"
+            #end
+            },
+            "header" : {
+            #foreach($key in $input.params().header.keySet())
+              #if($foreach.index > 0), #end
+              "$util.escapeJavaScript($key)": "$util.escapeJavaScript($input.params().header.get($key))"
+            #end
+            },
+            "path" : {
+            #foreach($key in $input.params().path.keySet())
+              #if($foreach.index > 0), #end
+              "$util.escapeJavaScript($key)": "$util.escapeJavaScript($input.params().path.get($key))"
+            #end
+            },
             "body" : $input.json('$')
           }
         */})
@@ -338,19 +368,25 @@ module.exports.sync = function(functionName, callback) {
       responseTemplates: {},
       selectionPattern: '.*',
     }
+    if (route.output === 'html') {
+      params.responseTemplates['text/html'] = '$input.path(\'$.html\')'
+    }
     apigateway.putIntegrationResponse(params, callback)
   })
-  .then(function(body, callback) {
+  .then(function(callback) {
     console.log('Creating method response')
     var params = {
       httpMethod: controller.method,
       resourceId: resourceId,
       restApiId: api.id,
       statusCode: '200',
+      responseModels: {},
       responseParameters: {},
-      responseTemplates: {},
-    };
-    apigateway.putIntegrationResponse(params, callback)
+    }
+    if (route.output === 'html') {
+      params.responseModels['text/html'] = 'Empty'
+    }
+    apigateway.putMethodResponse(params, callback)
   })
   .end(callback)
 }
