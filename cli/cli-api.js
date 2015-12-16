@@ -80,6 +80,7 @@ module.exports.create = function(callback) {
       config.api = _.pick(api, 'id', 'name', 'description')
       utils.writeConfig(config)
       console.log('Updated API configuration successfully')
+      callback()
     })
     .end(callback)
   })

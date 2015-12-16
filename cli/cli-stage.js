@@ -53,6 +53,7 @@ module.exports.create = function(callback) {
       config.stage = answers.name
       utils.writeConfig(config)
       console.log('Updated stage configuration successfully')
+      callback()
     })
     .end(callback)
   })

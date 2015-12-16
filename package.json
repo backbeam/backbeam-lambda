@@ -1,6 +1,6 @@
 {
   "name": "backbeam-lambda",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Development tools for creating web applications based on AWS lambda",
   "scripts": {
     "test": "mocha"

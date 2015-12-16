@@ -45,9 +45,10 @@ module.exports = function(yargs) {
   .then(function(callback) {
     require('./cli-api').select(callback)
   })
-  .then(function(callback) {
-    require('./cli-stage').select(callback)
-  })
+  // The REST API doesn't contain any methods
+  // .then(function(callback) {
+  //   require('./cli-stage').select(callback)
+  // })
   .then(function(callback) {
     require('./cli-role').select(callback)
   })
