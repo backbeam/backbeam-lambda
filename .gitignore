@@ -1,4 +1,6 @@
 node_modules
 coverage
 npm-debug.log
-test/test-app-new/
+test/test-app
+lib
+.nyc_output
