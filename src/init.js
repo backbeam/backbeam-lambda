@@ -76,7 +76,7 @@ Backbeam.prototype.init = function(dir, params) {
           'aws-sdk': '2.2.3', // see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
         },
         devDependencies: {
-          'backbeam-lambda': '^0.1.0',
+          'backbeam-lambda': '^'+require('../package.json').version,
           'mocha': '^1.21.4',
           'supertest': '^1.1.0',
         },

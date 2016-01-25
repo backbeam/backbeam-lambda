@@ -111,6 +111,9 @@ Backbeam.prototype.lambdaSyncFunction = function(functionName) {
           libraryTarget: 'commonjs',
         },
         target: 'node',
+        externals: {
+          'aws-sdk': 'commonjs aws-sdk',
+        },
         module: {
           loaders: [
             {

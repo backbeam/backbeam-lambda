@@ -9,7 +9,6 @@ import Backbeam from './'
 // dynamo.setEndpoint('http://localhost:8000')
 
 Backbeam.prototype.serverStart = function(port=3333) {
-  const port = 3333
   const app = express()
 
   app.use((req, res, next) => {
@@ -17,7 +16,7 @@ Backbeam.prototype.serverStart = function(port=3333) {
       .then((config) => {
         var path = req.path.split('/')
 
-        var endpoint = config.api.endpoints.filter((endpoint) => {
+        var endpoint = config.api.endpoints.find((endpoint) => {
           if (endpoint.method !== req.method) return false
           var comps = endpoint.path.split('/')
 
@@ -33,16 +32,14 @@ Backbeam.prototype.serverStart = function(port=3333) {
           })
 
           return matches
-        })[0]
+        })
 
         if (!endpoint) {
           return res.status(404).json({ message: 'Not found' })
         }
 
-        var func = config.lambda.functions
-          .filter((func) => func.functionName === endpoint.functionName)[0]
-
-        if (!endpoint) {
+        var func = this._findFunction(config, { functionName: endpoint.functionName })
+        if (!func) {
           return res.status(500).json({
             message: `Lambda function ${endpoint.functionName} not found`
           })
@@ -55,7 +52,7 @@ Backbeam.prototype.serverStart = function(port=3333) {
           path: endpoint.params,
         }
         var context = {
-          succeed: function(output) {
+          succeed(output) {
             if (endpoint.output === 'html') {
               res.contentType('text/html')
               res.send(output.html)
