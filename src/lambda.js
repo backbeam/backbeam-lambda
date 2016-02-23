@@ -5,12 +5,12 @@ var uuid = require('node-uuid')
 var AWS = require('aws-sdk')
 var pify = require('pify')
 var archiver = require('archiver')
-var webpack = pify(require('webpack'))
 
 import dedent from 'dedent'
 import Backbeam from './'
 import promisify from './utils/promisify'
 import sanitize from './utils/sanitize'
+import bundler from './bundler'
 
 Backbeam.prototype._findFunction = function(data, params) {
   return data.lambda.functions.find(func => {
@@ -102,30 +102,7 @@ Backbeam.prototype.lambdaSyncFunction = function(functionName) {
       if (!func) return Promise.reject(new Error(`Function ${functionName} not found`))
 
       this.emit('job:progress', { id: job, log: `Bundling code` })
-      return webpack({
-        entry: [this._fullpath(func.filename)],
-        output: {
-          path: path.dirname(bundlefile),
-          filename: path.basename(bundlefile),
-          library: 'handler',
-          libraryTarget: 'commonjs',
-        },
-        target: 'node',
-        externals: {
-          'aws-sdk': 'commonjs aws-sdk',
-        },
-        module: {
-          loaders: [
-            {
-              test: '.js',
-              loaders: ['babel'],
-              query: {
-                presets: ['es2015']
-              }
-            }
-          ]
-        }
-      })
+      return bundler(this._fullpath(func.filename), bundlefile)
     })
     .then((stats) => {
       this.emit('job:progress', { id: job, log: `Zipping bundle` })
@@ -186,7 +163,7 @@ Backbeam.prototype.lambdaSyncFunction = function(functionName) {
             this.emit('job:progress', { id: job, log: `Updating function configuration` })
             var params = {
               FunctionName: func.functionName,
-              Handler: 'index.handler',
+              Handler: 'index.'+func.handler,
               Role: func.role,
               Description: func.description,
               MemorySize: func.memorySize,

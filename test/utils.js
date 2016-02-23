@@ -9,14 +9,19 @@ exports.testAppDir = function() {
   return path.join(__dirname, 'test-app')
 }
 
+exports.createAppDir = function() {
+  const dir = exports.testAppDir()
+  rimraf.sync(dir)
+  mkdirp.sync(dir)
+  return dir
+}
+
 exports.backbeam = function() {
   return backbeam
 }
 
 exports.init = function() {
-  const dir = exports.testAppDir()
-  rimraf.sync(dir)
-  mkdirp.sync(dir)
+  const dir = exports.createAppDir()
 
   var params = {
     region: backbeam.availableRegions()[0],
