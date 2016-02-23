@@ -19,6 +19,7 @@ export default class Backbeam extends EventEmitter {
     super()
     this.setRegion(this.availableRegions()[0])
     this.setDirectory(dir)
+    this.credentialsLoaded = false
   }
 
   _credentialsPath() {
@@ -39,6 +40,8 @@ export default class Backbeam extends EventEmitter {
           return Promise.reject(new Error('No credentials found in ~/.aws/credentials'))
         }
         AWS.config.update({ accessKeyId, secretAccessKey })
+        this.credentialsLoaded = true
+        this.emit('credentials_changed')
       })
   }
 
@@ -57,7 +60,10 @@ export default class Backbeam extends EventEmitter {
         })
         return promisify(fs, 'writeFile', file, data)
       })
-      .then(() => this.emit('credentials_changed'))
+      .then(() => {
+        this.credentialsLoaded = true
+        this.emit('credentials_changed')
+      })
   }
 
   _random() {
