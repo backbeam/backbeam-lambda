@@ -99,7 +99,7 @@ Backbeam.prototype.apiCreate = function(params) {
   return promisify(apigateway, 'createRestApi', params)
 }
 
-Backbeam.prototype.apiSyncEndpoint = function(params) {
+Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
   var apigateway = new AWS.APIGateway()
   var method = params.method
   var path = params.path
@@ -116,8 +116,10 @@ Backbeam.prototype.apiSyncEndpoint = function(params) {
 
       func = this._findFunction(data, { functionName: endpoint.functionName })
       if (!func) return Promise.reject(new Error(`Lambda function not found ${endpoint.functionName}`))
+      if (syncFunction) return this.lambdaSyncFunction(endpoint.functionName)
       if (!func.functionArn) return Promise.reject(new Error(`Lambda function not synched ${endpoint.functionName}`))
-
+    })
+    .then(() => {
       this.emit('job:progress', { id: job, log: `Creating API resources` })
       return promisify(apigateway, 'getResources', { restApiId: api.id })
     })
