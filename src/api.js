@@ -133,7 +133,7 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
       })
       var pathParts = _.compact(endpoint.path.substring(parentResource.path.length).split('/'))
 
-      pync.series(pathParts, (part) => (
+      return pync.series(pathParts, (part) => (
         promisify(apigateway, 'createResource', {
           restApiId: api.id,
           parentId: parentResource.id,
@@ -147,32 +147,31 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
     .then(() => {
       resourceId = parentResource.id
       var method = parentResource.resourceMethods && parentResource.resourceMethods[endpoint.method]
-      if (method) {
-        var params = {
-          restApiId: api.id,
-          resourceId: resourceId,
-          httpMethod: endpoint.method,
-        }
-        console.log('deleteMethod')
-        return promisify(apigateway, 'deleteMethod', params)
-      } else {
-        var params = {
-          authorizationType: 'none',
-          httpMethod: endpoint.method,
-          resourceId: resourceId,
-          restApiId: api.id,
-          apiKeyRequired: false,
-        }
-        return promisify(apigateway, 'putMethod', params)
+      if (!method) return
+      var params = {
+        restApiId: api.id,
+        resourceId: resourceId,
+        httpMethod: endpoint.method,
       }
+      return promisify(apigateway, 'deleteMethod', params)
     })
     .then(() => {
+      var params = {
+        authorizationType: 'none',
+        httpMethod: endpoint.method,
+        resourceId: resourceId,
+        restApiId: api.id,
+        apiKeyRequired: false,
+      }
+      return promisify(apigateway, 'putMethod', params)
+    })
+    .then((response) => {
       this.emit('job:progress', { id: job, log: `Creating integration` })
       var params = {
         restApiId: api.id,
         resourceId: resourceId,
         httpMethod: endpoint.method,
-        integrationHttpMethod: 'POST', // always POST?
+        integrationHttpMethod: 'POST', // always POST
         type: 'AWS',
         uri: `arn:aws:apigateway:${AWS.config.region}:lambda:path/2015-03-31/functions/${func.functionArn}/invocations`,
         requestTemplates: {
