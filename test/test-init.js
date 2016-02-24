@@ -52,7 +52,9 @@ describe('Backbeam.init()', function() {
         })
       })
       .then(function() {
+        assert.ok(fs.existsSync(path.join(dir, 'backbeam.json')))
         assert.ok(fs.existsSync(path.join(dir, 'app.js')))
+        assert.ok(fs.existsSync(path.join(dir, 'dynamo.js')))
         assert.ok(fs.existsSync(path.join(dir, 'test/test-utils.js')))
       })
   })
