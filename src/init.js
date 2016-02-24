@@ -66,7 +66,8 @@ Backbeam.prototype.init = function(dir, params) {
         description: 'Node.js app made with backbeam-lambda',
         scripts: {
           start: 'node app',
-          test: 'NODE_ENV=test mocha --bail --reporter spec test/',
+          // test: 'NODE_ENV=test mocha --bail --reporter spec test/',
+          dynamo: 'node dynamo',
         },
         author: {
           name: process.env.USER || '',
@@ -77,7 +78,9 @@ Backbeam.prototype.init = function(dir, params) {
         },
         devDependencies: {
           'backbeam-lambda': '^'+require('../package.json').version,
-          'mocha': '^1.21.4',
+          'local-dynamo': '^0.1.2',
+          // 'mocha': '^1.21.4',
+          'mkdirp': '^0.5.1',
           'supertest': '^1.1.0',
         },
         keywords: ['backbeam', 'lambda', 'aws'],
@@ -89,12 +92,43 @@ Backbeam.prototype.init = function(dir, params) {
     })
     .then(() => {
       var code = dedent`
+        var AWS = require('aws-sdk')
+        var dynamo = new AWS.DynamoDB({
+          region: require('./backbeam.json').region,
+          endpoint: 'http://localhost:4567',
+        })
+
         var Backbeam = require('backbeam-lambda').default
         var backbeam = new Backbeam(process.cwd())
 
-        var app = exports.app = backbeam.serverStart()
+        var port = 3333
+        console.log('Server running at port %d', port)
+        var app = exports.app = backbeam.serverStart(port)
       `
       return this._writeFile('app.js', code, false)
+    })
+    .then(() => {
+      var code = dedent`
+        var path = require('path')
+        var mkdirp = require('mkdirp')
+        var localDynamo = require('local-dynamo')
+
+        var dataDir = path.join(__dirname, 'data')
+        var port = 4567
+
+        mkdirp.sync(dataDir)
+
+        console.log('Launching DynamoDB at port %d and database dir %s', port, dataDir)
+        var childProcess = localDynamo.launch(dataDir, port)
+        childProcess.on('error', function(e) {
+          if (e.code === 'ENOENT') {
+            console.error('Failed to start DynamoDB Local. Maybe because the database directory does not exist.')
+          } else {
+            console.error('Failed to start DynamoDB Local. Error:', e.message)
+          }
+        })
+      `
+      return this._writeFile('dynamo.js', code, false)
     })
     .then(() => {
       var code = dedent`

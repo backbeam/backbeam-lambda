@@ -3,11 +3,6 @@ var http = require('http')
 
 import Backbeam from './'
 
-// see http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.DynamoDBLocal.html
-// run dynamo with java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb
-// var dynamo = new AWS.DynamoDB()
-// dynamo.setEndpoint('http://localhost:8000')
-
 Backbeam.prototype.serverStart = function(port=3333) {
   const app = express()
 
@@ -24,7 +19,7 @@ Backbeam.prototype.serverStart = function(port=3333) {
           endpoint.params = {}
           var matches = path.every((comp) => {
             var c = comps.shift()
-            if (c.substring(0, 1) === '{' && c.substring(c.length-2, 1)) {
+            if (c.substring(0, 1) === '{' && c.substring(c.length-2, 1) === '}') {
               endpoint.params[c.substring(1, c.length-1)] = comp
               return true
             }
