@@ -5,7 +5,7 @@
   "scripts": {
     "test": "mocha --compilers js:babel-register --timeout 50000",
     "coverage": "nyc npm test",
-    "build": "babel src --out-dir lib --source-maps",
+    "build": "babel src --out-dir lib --source-maps -q",
     "watch": "babel src --out-dir lib --source-maps --watch",
     "prepublish": "npm run build"
   },
