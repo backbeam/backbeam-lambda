@@ -12,13 +12,14 @@ import bundler from '../lib/bundler'
 const dir = utils.createAppDir()
 const input = path.join(dir, 'input.js')
 const output = path.join(dir, 'output.js')
+const lib = path.join(dir, 'node_modules/my_lib/index.js')
 
 describe('Bundler', () => {
 
   before(() => {
     mkdirp.sync(path.join(dir, 'node_modules'))
     mkdirp.sync(path.join(dir, 'node_modules/my_lib'))
-    fs.writeFileSync(path.join(dir, 'node_modules/my_lib/index.js'), `
+    fs.writeFileSync(lib, `
       exports.sayHello = function(word) {
         return 'hello '+word
       }
@@ -38,7 +39,9 @@ describe('Bundler', () => {
 
     return bundler(input, output)
       .then((stats) => {
-        assert.ok(stats.hash)
+        assert.ok(stats.compilation.fullHash)
+        assert.deepEqual(stats.compilation.fileDependencies, [input, lib])
+        assert.ok(stats.compilation.assets['output.js'])
         return exec(`node -e "require('${output}').${handler}('world')"`)
           .then((result) => {
             const [stdout, stderr] = result

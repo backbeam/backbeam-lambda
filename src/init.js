@@ -92,12 +92,6 @@ Backbeam.prototype.init = function(dir, params) {
     })
     .then(() => {
       var code = dedent`
-        var AWS = require('aws-sdk')
-        var dynamo = new AWS.DynamoDB({
-          region: require('./backbeam.json').region,
-          endpoint: 'http://localhost:4567',
-        })
-
         var Backbeam = require('backbeam-lambda').default
         var backbeam = new Backbeam(process.cwd())
 
@@ -129,6 +123,21 @@ Backbeam.prototype.init = function(dir, params) {
         })
       `
       return this._writeFile('dynamo.js', code, false)
+    })
+    .then(() => {
+      var code = dedent`
+        var AWS = require('aws-sdk')
+
+        module.exports = function(options) {
+          options = options || {}
+          if (process.env.LAMBDA_RUNTIME_DIR !== '/var/runtime') {
+            options.endpoint = options.endpoint || 'http://localhost:4567'
+            options.region = options.region || 'local'
+          }
+          return new AWS.DynamoDB(options)
+        }
+      `
+      return this._writeFile('dynamo-client.js', code, false)
     })
     .then(() => {
       var code = dedent`

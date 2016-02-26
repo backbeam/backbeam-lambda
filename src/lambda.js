@@ -43,7 +43,7 @@ Backbeam.prototype.lambdaCreateFunction = function(params) {
     })
     .then(() => {
       var code = dedent`
-        var aws = require('aws-sdk')
+        var dynamo = require('${path.relative(params.filename, 'dynamo-client').substring(1)}')()
 
         exports.${params.handler} = function(event, context) {
           context.succeed({ message: 'hello world' })
@@ -106,15 +106,17 @@ Backbeam.prototype.lambdaSyncFunction = function(functionName) {
     })
     .then((stats) => {
       this.emit('job:progress', { id: job, log: `Zipping bundle` })
-      func.hash = stats.hash
-      return pify(fs.readFile)(bundlefile, 'utf8')
+      func.hash = stats.compilation.fullHash
+      return pify(fs.stat)(bundlefile)
     })
-    .then((code) => {
+    .then((stats) => {
+      func.size = stats.size
       return new Promise((resolve, reject) => {
+        var readStream = fs.createReadStream(bundlefile)
         var writeStream = fs.createWriteStream(zipfile)
         var zip = archiver('zip')
         zip.pipe(writeStream)
-        zip.append(code, { name: 'index.js' })
+        zip.append(readStream, { name: 'index.js' })
         zip.finalize()
         writeStream.on('close', function() {
           fs.readFile(zipfile, (err, data) => err ? reject(err) : resolve(data))
