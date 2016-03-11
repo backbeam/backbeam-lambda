@@ -135,19 +135,13 @@ Backbeam.prototype._dynamoDeleteTable = function (tableName, dynamo) {
   })
 }
 
-Backbeam.prototype.dynamoSyncTable = function (table, dynamo) {
-  var job = this._random()
-  this.emit('job:start', { id: job, name: `Synching dynamo table ${table.name}`, steps: 2 })
-  return this._dynamoDescribeTable(table.name, dynamo)
+Backbeam.prototype.dynamoSyncTable = function (table, dynamo, currentJob) {
+  var job = this._job(`Synching dynamo table ${table.name}`, 1, currentJob)
+  return job.run(this._dynamoDescribeTable(table.name, dynamo)
     .then((oldTable) => {
       var params = this._dynamoEditTableParams(table, oldTable)
       if (params) return promisify(dynamo, oldTable ? 'updateTable' : 'createTable', params)
-    })
-    .then(() => this.emit('job:succees', { id: job }))
-    .catch((e) => {
-      this.emit('job:fail', { id: job, error: e })
-      return Promise.reject(e)
-    })
+    }))
 }
 
 Backbeam.prototype._dynamoEditTableParams = function (table, oldTable) {

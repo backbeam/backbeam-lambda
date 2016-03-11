@@ -85,26 +85,23 @@ Backbeam.prototype.lambdaDeleteFunction = function (params) {
     .then(() => this.emit('lambda_changed'))
 }
 
-Backbeam.prototype.lambdaSyncFunction = function (functionName) {
+Backbeam.prototype.lambdaSyncFunction = function (functionName, currentJob) {
   var lambda = new AWS.Lambda()
   var bundlefile = temp.path({ suffix: '.js' })
   var zipfile = temp.path({ suffix: '.zip' })
   var func, config
 
-  var job = this._random()
-  this.emit('job:start', { id: job, name: `Synching lambda function ${functionName}`, steps: 4 })
-
-  return this.readConfig()
+  var job = this._job(`Synching lambda function ${functionName}`, 5, currentJob)
+  return job.run(this.readConfig()
     .then((data) => {
       config = data
       func = data.lambda.functions.filter((func) => func.functionName === functionName)[0]
       if (!func) return Promise.reject(new Error(`Function ${functionName} not found`))
-
-      this.emit('job:progress', { id: job, log: 'Bundling code' })
+      job.progress('Bundling code')
       return bundler(this._fullpath(func.filename), bundlefile)
     })
     .then((stats) => {
-      this.emit('job:progress', { id: job, log: 'Zipping bundle' })
+      job.progress('Zipping bundle')
       func.hash = stats.compilation.fullHash
       return pify(fs.stat)(bundlefile)
     })
@@ -125,7 +122,7 @@ Backbeam.prototype.lambdaSyncFunction = function (functionName) {
     })
     .then((data) => {
       if (!func.functionArn) {
-        this.emit('job:progress', { id: job, log: 'Creating lambda function' })
+        job.progress('Creating lambda function')
         var params = {
           Code: {
             ZipFile: data
@@ -143,7 +140,7 @@ Backbeam.prototype.lambdaSyncFunction = function (functionName) {
           .then((body) => {
             func.functionArn = body.FunctionArn
 
-            this.emit('job:progress', { id: job, log: 'Adding permissions' })
+            job.progress('Adding permissions')
             var params = {
               Action: 'lambda:InvokeFunction',
               FunctionName: func.functionName,
@@ -153,7 +150,7 @@ Backbeam.prototype.lambdaSyncFunction = function (functionName) {
             return promisify(lambda, 'addPermission', params)
           })
       } else {
-        this.emit('job:progress', { id: job, log: 'Updating function code' })
+        job.progress('Updating function code')
         var options = {
           ZipFile: data,
           FunctionName: func.functionName,
@@ -161,7 +158,7 @@ Backbeam.prototype.lambdaSyncFunction = function (functionName) {
         }
         return promisify(lambda, 'updateFunctionCode', options)
           .then(() => {
-            this.emit('job:progress', { id: job, log: 'Updating function configuration' })
+            job.progress('Updating function configuration')
             var params = {
               FunctionName: func.functionName,
               Handler: 'index.' + func.handler,
@@ -174,10 +171,5 @@ Backbeam.prototype.lambdaSyncFunction = function (functionName) {
           })
       }
     })
-    .then(() => this.writeConfig(config))
-    .then(() => this.emit('job:succees', { id: job }))
-    .catch((e) => {
-      this.emit('job:fail', { id: job, error: e })
-      return Promise.reject(e)
-    })
+    .then(() => this.writeConfig(config)))
 }

@@ -97,16 +97,25 @@ Backbeam.prototype.apiCreate = function (params) {
   return promisify(apigateway, 'createRestApi', params)
 }
 
-Backbeam.prototype.apiSyncEndpoint = function (params, syncFunction) {
+Backbeam.prototype.apiSyncAllEndpoints = function (syncFunctions, currentJob) {
+  var job = this._job('Synching all endpoints', 1, currentJob)
+  return job.run(this.readConfig()
+    .then((data) => (
+      pync.series(data.api.endpoints, (endpoint) => (
+        this.apiSyncEndpoint(endpoint, syncFunctions, job)
+      ))
+    ))
+  )
+}
+
+Backbeam.prototype.apiSyncEndpoint = function (params, syncFunction, currentJob) {
   var apigateway = new AWS.APIGateway()
   var method = params.method
   var path = params.path
   var api, func, endpoint, parentResource, resourceId
 
-  var job = this._random()
-  this.emit('job:start', { id: job, name: `Synching endpoint ${method} ${path}`, steps: 5 })
-
-  return this.readConfig()
+  var job = this._job(`Synching endpoint ${method} ${path}`, 5, currentJob)
+  return job.run(this.readConfig()
     .then((data) => {
       api = data.api
       endpoint = this._findEndpoint(data, params)
@@ -114,11 +123,11 @@ Backbeam.prototype.apiSyncEndpoint = function (params, syncFunction) {
 
       func = this._findFunction(data, { functionName: endpoint.functionName })
       if (!func) return Promise.reject(new Error(`Lambda function not found ${endpoint.functionName}`))
-      if (syncFunction) return this.lambdaSyncFunction(endpoint.functionName)
+      if (syncFunction) return this.lambdaSyncFunction(endpoint.functionName, job)
       if (!func.functionArn) return Promise.reject(new Error(`Lambda function not synched ${endpoint.functionName}`))
     })
     .then(() => {
-      this.emit('job:progress', { id: job, log: 'Creating API resources' })
+      job.progress('Creating API resources')
       return promisify(apigateway, 'getResources', { restApiId: api.id })
     })
     .then((data) => {
@@ -164,7 +173,7 @@ Backbeam.prototype.apiSyncEndpoint = function (params, syncFunction) {
       return promisify(apigateway, 'putMethod', params)
     })
     .then((response) => {
-      this.emit('job:progress', { id: job, log: 'Creating integration' })
+      job.progress('Creating integration')
       var params = {
         restApiId: api.id,
         resourceId: resourceId,
@@ -201,7 +210,7 @@ Backbeam.prototype.apiSyncEndpoint = function (params, syncFunction) {
       return promisify(apigateway, 'putIntegration', params)
     })
     .then(() => {
-      this.emit('job:progress', { id: job, log: 'Creating integration response' })
+      job.progress('Creating integration response')
       var params = {
         httpMethod: endpoint.method,
         resourceId: resourceId,
@@ -217,7 +226,7 @@ Backbeam.prototype.apiSyncEndpoint = function (params, syncFunction) {
       return promisify(apigateway, 'putIntegrationResponse', params)
     })
     .then(() => {
-      this.emit('job:progress', { id: job, log: 'Creating method response' })
+      job.progress('Creating method response')
       var params = {
         httpMethod: endpoint.method,
         resourceId: resourceId,
@@ -230,14 +239,7 @@ Backbeam.prototype.apiSyncEndpoint = function (params, syncFunction) {
         params.responseModels['text/html'] = 'Empty'
       }
       return promisify(apigateway, 'putMethodResponse', params)
-    })
-    .then(() => {
-      this.emit('job:succees', { id: job })
-    })
-    .catch((e) => {
-      this.emit('job:fail', { id: job, error: e })
-      return Promise.reject(e)
-    })
+    }))
 }
 
 Backbeam.prototype.apiListStages = function () {

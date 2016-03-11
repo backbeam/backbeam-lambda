@@ -63,10 +63,6 @@ export default class Backbeam extends EventEmitter {
       })
   }
 
-  _random () {
-    return uuid.v4()
-  }
-
   getDirectory () {
     return this._dir
   }
@@ -135,3 +131,4 @@ require('./lambda')
 require('./iam')
 require('./dynamo')
 require('./server')
+require('./job')
