@@ -58,7 +58,7 @@ Backbeam.prototype.dynamoCreateTable = function(params) {
       return this.writeConfig(data)
     })
     .then(() => this.emit('dynamo_changed'))
-    .then(() => this._dynamoSyncTable(params, this.localDynamo()))
+    .then(() => this.dynamoSyncTable(params, this.localDynamo()))
 }
 
 Backbeam.prototype.dynamoEditTable = function(params) {
@@ -76,8 +76,10 @@ Backbeam.prototype.dynamoEditTable = function(params) {
       Object.assign(table, params)
       return this.writeConfig(data)
     })
-    .then(() => this.emit('dynamo_changed'))
-    .then(() => this._dynamoSyncTable(table, this.localDynamo()))
+    .then(() => {
+      this.emit('dynamo_changed')
+      this.dynamoSyncTable(table, this.localDynamo())
+    })
 }
 
 Backbeam.prototype.dynamoDeleteTable = function(params) {
@@ -91,8 +93,10 @@ Backbeam.prototype.dynamoDeleteTable = function(params) {
       tables.splice(tables.indexOf(table), 1)
       return this.writeConfig(data)
     })
-    .then(() => this.emit('dynamo_changed'))
-    .then(() => this._dynamoDeleteTable(params.name))
+    .then(() => {
+      this.emit('dynamo_changed')
+      this._dynamoDeleteTable(params.name, this.localDynamo())
+    })
 }
 
 Backbeam.prototype.localDynamo = function() {
@@ -105,27 +109,44 @@ Backbeam.prototype.localDynamo = function() {
   return this._localDynamo
 }
 
-Backbeam.prototype._dynamoDescribeTable = function(tableName) {
+Backbeam.prototype.remoteDynamo = function() {
+  if (!this._remoteDynamo || this._remoteDynamoRegion !== this.getRegion()) {
+    this._remoteDynamoRegion = this.getRegion()
+    this._remoteDynamo = new AWS.DynamoDB({
+      region: this.getRegion(),
+    })
+  }
+  return this._remoteDynamo
+}
+
+Backbeam.prototype._dynamoDescribeTable = function(tableName, dynamo) {
   return new Promise((resolve, reject) => {
-    this.localDynamo().describeTable({ TableName: tableName }, function(err, data) {
+    dynamo.describeTable({ TableName: tableName }, function(err, data) {
       err && err.code !== 'ResourceNotFoundException' ? reject(err) : resolve(data && data.Table)
     })
   })
 }
 
-Backbeam.prototype._dynamoDeleteTable = function(tableName) {
+Backbeam.prototype._dynamoDeleteTable = function(tableName, dynamo) {
   return new Promise((resolve, reject) => {
-    this.localDynamo().describeTable({ TableName: tableName }, function(err, data) {
+    dynamo.describeTable({ TableName: tableName }, function(err, data) {
       err && err.code !== 'ResourceNotFoundException' ? reject(err) : resolve(data)
     })
   })
 }
 
-Backbeam.prototype._dynamoSyncTable = function(table, dynamo) {
-  return this._dynamoDescribeTable(table.name)
+Backbeam.prototype.dynamoSyncTable = function(table, dynamo) {
+  var job = this._random()
+  this.emit('job:start', { id: job, name: `Synching dynamo table ${table.name}`, steps: 2 })
+  return this._dynamoDescribeTable(table.name, dynamo)
     .then((oldTable) => {
       var params = this._dynamoEditTableParams(table, oldTable)
       if (params) return promisify(dynamo, oldTable ? 'updateTable' : 'createTable', params)
+    })
+    .then(() => this.emit('job:succees', { id: job }))
+    .catch((e) => {
+      this.emit('job:fail', { id: job, error: e })
+      return Promise.reject(e)
     })
 }
 

@@ -15,8 +15,10 @@
     "url": "https://github.com/backbeam/backbeam-lambda"
   },
   "keywords": [
-    "backend",
-    "platform"
+    "aws",
+    "lambda",
+    "serverless",
+    "dynamo"
   ],
   "author": "The backbeam.io team <contact@backbeam.io>",
   "license": "MIT",
@@ -44,6 +46,7 @@
   "devDependencies": {
     "babel-register": "^6.4.3",
     "mocha": "^2.3.4",
+    "standard": "^6.0.8",
     "supertest": "^1.1.0"
   },
   "bin": {
