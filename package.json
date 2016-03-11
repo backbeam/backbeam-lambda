@@ -7,7 +7,13 @@
     "coverage": "nyc npm test",
     "build": "babel src --out-dir lib --source-maps -q",
     "watch": "babel src --out-dir lib --source-maps --watch",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "lint": "standard"
+  },
+  "standard": {
+    "ignore": [
+      "lib"
+    ]
   },
   "main": "lib/index.js",
   "repository": {

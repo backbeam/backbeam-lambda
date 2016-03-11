@@ -3,7 +3,7 @@ var http = require('http')
 
 import Backbeam from './'
 
-Backbeam.prototype.serverStart = function(port=3333) {
+Backbeam.prototype.serverStart = function (port = 3333) {
   const app = express()
 
   app.use((req, res, next) => {
@@ -19,8 +19,8 @@ Backbeam.prototype.serverStart = function(port=3333) {
           endpoint.params = {}
           var matches = path.every((comp) => {
             var c = comps.shift()
-            if (c.substring(0, 1) === '{' && c.substring(c.length-2, 1) === '}') {
-              endpoint.params[c.substring(1, c.length-1)] = comp
+            if (c.substring(0, 1) === '{' && c.substring(c.length - 2, 1) === '}') {
+              endpoint.params[c.substring(1, c.length - 1)] = comp
               return true
             }
             return c === comp
@@ -44,10 +44,10 @@ Backbeam.prototype.serverStart = function(port=3333) {
           header: req.headers,
           querystring: req.query,
           body: req.body,
-          path: endpoint.params,
+          path: endpoint.params
         }
         var context = {
-          succeed(output) {
+          succeed (output) {
             if (endpoint.output === 'html') {
               res.contentType('text/html')
               res.send(output.html)
@@ -61,7 +61,7 @@ Backbeam.prototype.serverStart = function(port=3333) {
       })
       .catch((e) => {
         return res.status(500).json({
-          message: e.message || `Internal error`
+          message: e.message || 'Internal error'
         })
       })
   })

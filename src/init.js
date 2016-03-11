@@ -5,11 +5,10 @@ var mkdirp = pify(require('mkdirp'))
 
 import dedent from 'dedent'
 import Backbeam from './'
-import promisify from './utils/promisify'
 import sanitize from './utils/sanitize'
 
-Backbeam.prototype.init = function(dir, params) {
-  var projectName = params.name || path.basename(dir)
+Backbeam.prototype.init = function (dir, params) {
+  var projectName = params.name || path.basename(dir)
 
   return Promise.resolve()
     .then(() => {
@@ -18,12 +17,12 @@ Backbeam.prototype.init = function(dir, params) {
         region: 'string',
         name: 'string?',
         api: 'object',
-        role: 'string?',
+        role: 'string?'
       })
       params.api = sanitize(params.api, {
         id: 'string',
         name: 'string',
-        description: 'string?',
+        description: 'string?'
       })
 
       this._dir = dir
@@ -39,24 +38,24 @@ Backbeam.prototype.init = function(dir, params) {
         region: params.region,
         api: Object.assign({
           stage: null,
-          endpoints: [],
+          endpoints: []
         }, params.api),
         lambda: {
           defaults: {
             role: params.role,
             timeout: 60,
-            memory: 128,
+            memory: 128
           },
-          functions: [],
+          functions: []
         },
         dynamo: {
-          tables: [],
+          tables: []
         }
       }
       return this.writeConfig(data)
     })
     .then(() => (
-      Promise.all(['functions', 'test'].map(d => mkdirp(path.join(dir, d))))
+      Promise.all(['functions', 'test'].map((d) => mkdirp(path.join(dir, d))))
     ))
     .then(() => {
       var data = {
@@ -67,25 +66,25 @@ Backbeam.prototype.init = function(dir, params) {
         scripts: {
           start: 'node app',
           // test: 'NODE_ENV=test mocha --bail --reporter spec test/',
-          dynamo: 'node dynamo',
+          dynamo: 'node dynamo'
         },
         author: {
-          name: process.env.USER || '',
+          name: process.env.USER || ''
         },
         license: 'ISC',
         dependencies: {
-          'aws-sdk': '2.2.3', // see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
+          'aws-sdk': '2.2.3' // see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
         },
         devDependencies: {
-          'backbeam-lambda': '^'+require('../package.json').version,
+          'backbeam-lambda': '^' + require('../package.json').version,
           'local-dynamo': '^0.1.2',
           // 'mocha': '^1.21.4',
           'mkdirp': '^0.5.1',
-          'supertest': '^1.1.0',
+          'supertest': '^1.1.0'
         },
         keywords: ['backbeam', 'lambda', 'aws'],
         engines: {
-          node : '0.10.36', // see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
+          node: '0.10.36' // see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
         }
       }
       return this._writeFile('package.json', data, false)
@@ -129,7 +128,7 @@ Backbeam.prototype.init = function(dir, params) {
         var AWS = require('aws-sdk')
 
         module.exports = function(options) {
-          options = options || {}
+          options = options || {}
           if (process.env.LAMBDA_RUNTIME_DIR !== '/var/runtime') {
             options.endpoint = options.endpoint || 'http://localhost:4567'
             options.region = options.region || 'local'

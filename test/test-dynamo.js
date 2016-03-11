@@ -1,3 +1,4 @@
+/* global describe it before */
 var utils = require('./utils')
 var backbeam = utils.backbeam()
 var assert = require('assert')
@@ -5,7 +6,6 @@ var assert = require('assert')
 require('./aws-mock')
 
 describe('Dynamo methods', () => {
-
   before(() => utils.init())
 
   it('#dynamoCreateTable', () => {
@@ -18,22 +18,22 @@ describe('Dynamo methods', () => {
       readCapacity: 1,
       writeCapacity: 1,
       localIndexes: [],
-      globalIndexes: [],
+      globalIndexes: []
     }
     return backbeam.dynamoCreateTable(params)
       .then(() => backbeam.readConfig())
       .then((data) => {
         var table = backbeam._findTable(data, params)
         assert.deepEqual(table, {
-          "name": "users",
-          "hashKeyName": "id",
-          "hashKeyType": "string",
-          "rangeKeyName": "created_at",
-          "rangeKeyType": "number",
-          "readCapacity": 1,
-          "writeCapacity": 1,
-          "localIndexes": [],
-          "globalIndexes": []
+          'name': 'users',
+          'hashKeyName': 'id',
+          'hashKeyType': 'string',
+          'rangeKeyName': 'created_at',
+          'rangeKeyType': 'number',
+          'readCapacity': 1,
+          'writeCapacity': 1,
+          'localIndexes': [],
+          'globalIndexes': []
         })
       })
   })
@@ -48,7 +48,7 @@ describe('Dynamo methods', () => {
       readCapacity: 2,
       writeCapacity: 2,
       localIndexes: [],
-      globalIndexes: [],
+      globalIndexes: []
     }
     return backbeam.dynamoEditTable(params)
       .then(() => backbeam.readConfig())
@@ -62,7 +62,7 @@ describe('Dynamo methods', () => {
 
   it('#dynamoDeleteTable', () => {
     var params = {
-      name: 'users',
+      name: 'users'
     }
     return backbeam.dynamoDeleteTable(params)
       .then(() => backbeam.readConfig())
@@ -71,5 +71,4 @@ describe('Dynamo methods', () => {
         assert.ok(!table)
       })
   })
-
 })

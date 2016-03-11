@@ -12,13 +12,13 @@ import promisify from './utils/promisify'
 import sanitize from './utils/sanitize'
 import bundler from './bundler'
 
-Backbeam.prototype._findFunction = function(data, params) {
-  return data.lambda.functions.find(func => {
+Backbeam.prototype._findFunction = function (data, params) {
+  return data.lambda.functions.find((func) => {
     return func.functionName === params.functionName
   })
 }
 
-Backbeam.prototype.lambdaCreateFunction = function(params) {
+Backbeam.prototype.lambdaCreateFunction = function (params) {
   return Promise.resolve()
     .then(() => {
       params = sanitize(params, {
@@ -28,11 +28,11 @@ Backbeam.prototype.lambdaCreateFunction = function(params) {
         handler: 'string',
         role: 'string',
         memory: 'number',
-        timeout: 'number',
+        timeout: 'number'
       })
     })
     .then(() => this.readConfig())
-    .then(data => {
+    .then((data) => {
       var func = this._findFunction(data, params)
       if (func) {
         return Promise.reject(new Error(`A function named ${params.functionName} already exists`))
@@ -54,10 +54,9 @@ Backbeam.prototype.lambdaCreateFunction = function(params) {
     .then(() => this.emit('lambda_changed'))
 }
 
-Backbeam.prototype.lambdaEditFunction = function(params) {
+Backbeam.prototype.lambdaEditFunction = function (params) {
   return this.readConfig()
-    .then(data => {
-      var functions = data.lambda.functions
+    .then((data) => {
       var func = this._findFunction(data, params)
       if (!func) {
         return Promise.reject(new Error(`No function named ${params.functionName} found`))
@@ -68,9 +67,9 @@ Backbeam.prototype.lambdaEditFunction = function(params) {
     .then(() => this.emit('lambda_changed'))
 }
 
-Backbeam.prototype.lambdaDeleteFunction = function(params) {
+Backbeam.prototype.lambdaDeleteFunction = function (params) {
   return this.readConfig()
-    .then(data => {
+    .then((data) => {
       var functions = data.lambda.functions
       var func = this._findFunction(data, params)
       if (!func) {
@@ -80,13 +79,13 @@ Backbeam.prototype.lambdaDeleteFunction = function(params) {
       return this.writeConfig(data)
         .then(() => {
           this._deleteFile(func.filename)
-            .catch(e => console.warn('Ignoring', e))
+            .catch((e) => console.warn('Ignoring', e))
         })
     })
     .then(() => this.emit('lambda_changed'))
 }
 
-Backbeam.prototype.lambdaSyncFunction = function(functionName) {
+Backbeam.prototype.lambdaSyncFunction = function (functionName) {
   var lambda = new AWS.Lambda()
   var bundlefile = temp.path({ suffix: '.js' })
   var zipfile = temp.path({ suffix: '.zip' })
@@ -98,14 +97,14 @@ Backbeam.prototype.lambdaSyncFunction = function(functionName) {
   return this.readConfig()
     .then((data) => {
       config = data
-      func = data.lambda.functions.filter(func => func.functionName === functionName)[0]
+      func = data.lambda.functions.filter((func) => func.functionName === functionName)[0]
       if (!func) return Promise.reject(new Error(`Function ${functionName} not found`))
 
-      this.emit('job:progress', { id: job, log: `Bundling code` })
+      this.emit('job:progress', { id: job, log: 'Bundling code' })
       return bundler(this._fullpath(func.filename), bundlefile)
     })
     .then((stats) => {
-      this.emit('job:progress', { id: job, log: `Zipping bundle` })
+      this.emit('job:progress', { id: job, log: 'Zipping bundle' })
       func.hash = stats.compilation.fullHash
       return pify(fs.stat)(bundlefile)
     })
@@ -118,7 +117,7 @@ Backbeam.prototype.lambdaSyncFunction = function(functionName) {
         zip.pipe(writeStream)
         zip.append(readStream, { name: 'index.js' })
         zip.finalize()
-        writeStream.on('close', function() {
+        writeStream.on('close', () => {
           fs.readFile(zipfile, (err, data) => err ? reject(err) : resolve(data))
         })
         writeStream.on('error', reject)
@@ -126,50 +125,50 @@ Backbeam.prototype.lambdaSyncFunction = function(functionName) {
     })
     .then((data) => {
       if (!func.functionArn) {
-        this.emit('job:progress', { id: job, log: `Creating lambda function` })
+        this.emit('job:progress', { id: job, log: 'Creating lambda function' })
         var params = {
           Code: {
-            ZipFile: data,
+            ZipFile: data
           },
           FunctionName: func.functionName,
-          Handler: 'index.'+func.handler,
+          Handler: 'index.' + func.handler,
           Role: func.role,
           Runtime: 'nodejs',
           Description: func.description,
           MemorySize: func.memory,
           Publish: false,
-          Timeout: func.timeout,
+          Timeout: func.timeout
         }
         return promisify(lambda, 'createFunction', params)
           .then((body) => {
             func.functionArn = body.FunctionArn
 
-            this.emit('job:progress', { id: job, log: `Adding permissions` })
+            this.emit('job:progress', { id: job, log: 'Adding permissions' })
             var params = {
               Action: 'lambda:InvokeFunction',
               FunctionName: func.functionName,
               Principal: 'apigateway.amazonaws.com',
-              StatementId: uuid.v4(),
+              StatementId: uuid.v4()
             }
             return promisify(lambda, 'addPermission', params)
           })
       } else {
-        this.emit('job:progress', { id: job, log: `Updating function code` })
-        var params = {
+        this.emit('job:progress', { id: job, log: 'Updating function code' })
+        var options = {
           ZipFile: data,
           FunctionName: func.functionName,
-          Publish: false,
+          Publish: false
         }
-        return promisify(lambda, 'updateFunctionCode', params)
+        return promisify(lambda, 'updateFunctionCode', options)
           .then(() => {
-            this.emit('job:progress', { id: job, log: `Updating function configuration` })
+            this.emit('job:progress', { id: job, log: 'Updating function configuration' })
             var params = {
               FunctionName: func.functionName,
-              Handler: 'index.'+func.handler,
+              Handler: 'index.' + func.handler,
               Role: func.role,
               Description: func.description,
               MemorySize: func.memorySize,
-              Timeout: func.timeout,
+              Timeout: func.timeout
             }
             return promisify(lambda, 'updateFunctionConfiguration', params)
           })

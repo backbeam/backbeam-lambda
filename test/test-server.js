@@ -1,3 +1,4 @@
+/* global describe it before */
 var utils = require('./utils')
 var backbeam = utils.backbeam()
 var assert = require('assert')
@@ -8,7 +9,6 @@ require('./aws-mock')
 var app
 
 describe('Dev server', () => {
-
   before(() => {
     app = backbeam.serverStart()
     return utils.init()
@@ -31,7 +31,7 @@ describe('Dev server', () => {
         var params = {
           method: 'GET',
           path: '/',
-          functionName: 'testFunction',
+          functionName: 'testFunction'
         }
         return backbeam.apiCreateEndpoint(params)
       })
@@ -40,7 +40,7 @@ describe('Dev server', () => {
           request(app)
             .get('/')
             .expect(200)
-            .end(function(err, res) {
+            .end((err, res) => {
               if (err) return reject(err)
               assert.deepEqual(res.body, { message: 'hello world' })
               resolve()
@@ -48,5 +48,4 @@ describe('Dev server', () => {
         })
       })
   })
-
 })

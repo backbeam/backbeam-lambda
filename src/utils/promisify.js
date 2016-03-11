@@ -1,8 +1,8 @@
 var pify = require('pify')
 
-export default function(obj, method, ...args) {
+export default function (obj, method, ...args) {
   if (obj == null) {
-    return Promise.reject(new Error(`Cannot promisify. Object is null or indefined`))
+    return Promise.reject(new Error('Cannot promisify. Object is null or indefined'))
   }
   if (!obj[method]) {
     const methods = Object.keys(obj).filter((key) => typeof obj[key] === 'function')

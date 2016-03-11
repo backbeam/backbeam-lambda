@@ -7,24 +7,24 @@ import Backbeam from './'
 import sanitize from './utils/sanitize'
 import promisify from './utils/promisify'
 
-Backbeam.prototype._findEndpoint = function(data, endpoint) {
-  return data.api.endpoints.find(endp => {
-    return endp.method === endpoint.method
-        && endp.path === endpoint.path
+Backbeam.prototype._findEndpoint = function (data, endpoint) {
+  return data.api.endpoints.find((endp) => {
+    return endp.method === endpoint.method &&
+      endp.path === endpoint.path
   })
 }
 
-Backbeam.prototype.apiDeleteEndpoint = function(endpoint) {
+Backbeam.prototype.apiDeleteEndpoint = function (endpoint) {
   return Promise.resolve()
     .then(() => {
       endpoint = sanitize(endpoint, {
         method: 'string',
         path: 'string',
-        functionName: 'string',
+        functionName: 'string'
       })
     })
     .then(() => this.readConfig())
-    .then(data => {
+    .then((data) => {
       var endpoints = data.api.endpoints
       var endp = this._findEndpoint(data, endpoint)
       if (!endp) return Promise.reject(new Error('Endpoint not found'))
@@ -34,25 +34,24 @@ Backbeam.prototype.apiDeleteEndpoint = function(endpoint) {
     .then(() => this.emit('api_changed'))
 }
 
-Backbeam.prototype.apiEditEndpoint = function(endpoint, state) {
+Backbeam.prototype.apiEditEndpoint = function (endpoint, state) {
   return Promise.resolve()
     .then(() => {
       endpoint = sanitize(endpoint, {
         method: 'string',
         path: 'string',
-        functionName: 'string',
+        functionName: 'string'
       })
       state = sanitize(state, {
         method: 'string',
         path: 'string',
         functionName: 'string',
         input: 'string?',
-        output: 'string?',
+        output: 'string?'
       })
     })
     .then(() => this.readConfig())
-    .then(data => {
-      var endpoints = data.api.endpoints
+    .then((data) => {
       var endp = this._findEndpoint(data, endpoint)
       var endp2 = this._findEndpoint(data, state)
       if (!endp) return Promise.reject(new Error('Endpoint not found'))
@@ -65,7 +64,7 @@ Backbeam.prototype.apiEditEndpoint = function(endpoint, state) {
     .then(() => this.emit('api_changed'))
 }
 
-Backbeam.prototype.apiCreateEndpoint = function(endpoint) {
+Backbeam.prototype.apiCreateEndpoint = function (endpoint) {
   return Promise.resolve()
     .then(() => {
       endpoint = sanitize(endpoint, {
@@ -73,12 +72,11 @@ Backbeam.prototype.apiCreateEndpoint = function(endpoint) {
         path: 'string',
         functionName: 'string',
         input: 'string?',
-        output: 'string?',
+        output: 'string?'
       })
     })
     .then(() => this.readConfig())
     .then((data) => {
-      var endpoints = data.api.endpoints
       var endp = this._findEndpoint(data, endpoint)
       if (endp) {
         return Promise.reject(new Error('An endpoint witht he same method and path already exists'))
@@ -89,17 +87,17 @@ Backbeam.prototype.apiCreateEndpoint = function(endpoint) {
     .then(() => this.emit('api_changed'))
 }
 
-Backbeam.prototype.apiList = function() {
+Backbeam.prototype.apiList = function () {
   var apigateway = new AWS.APIGateway()
   return promisify(apigateway, 'getRestApis', {})
 }
 
-Backbeam.prototype.apiCreate = function(params) {
+Backbeam.prototype.apiCreate = function (params) {
   var apigateway = new AWS.APIGateway()
   return promisify(apigateway, 'createRestApi', params)
 }
 
-Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
+Backbeam.prototype.apiSyncEndpoint = function (params, syncFunction) {
   var apigateway = new AWS.APIGateway()
   var method = params.method
   var path = params.path
@@ -120,15 +118,15 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
       if (!func.functionArn) return Promise.reject(new Error(`Lambda function not synched ${endpoint.functionName}`))
     })
     .then(() => {
-      this.emit('job:progress', { id: job, log: `Creating API resources` })
+      this.emit('job:progress', { id: job, log: 'Creating API resources' })
       return promisify(apigateway, 'getResources', { restApiId: api.id })
     })
     .then((data) => {
       var resources = data.items
-      resources.forEach(function(resource) {
-        if (endpoint.path.indexOf(resource.path) === 0
-          && (!parentResource || resource.path.length > parentResource.path.length)) {
-            parentResource = resource
+      resources.forEach((resource) => {
+        if (endpoint.path.indexOf(resource.path) === 0 &&
+          (!parentResource || resource.path.length > parentResource.path.length)) {
+          parentResource = resource
         }
       })
       var pathParts = _.compact(endpoint.path.substring(parentResource.path.length).split('/'))
@@ -137,7 +135,7 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
         promisify(apigateway, 'createResource', {
           restApiId: api.id,
           parentId: parentResource.id,
-          pathPart: part,
+          pathPart: part
         })
         .then((body) => {
           parentResource = body
@@ -151,7 +149,7 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
       var params = {
         restApiId: api.id,
         resourceId: resourceId,
-        httpMethod: endpoint.method,
+        httpMethod: endpoint.method
       }
       return promisify(apigateway, 'deleteMethod', params)
     })
@@ -161,12 +159,12 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
         httpMethod: endpoint.method,
         resourceId: resourceId,
         restApiId: api.id,
-        apiKeyRequired: false,
+        apiKeyRequired: false
       }
       return promisify(apigateway, 'putMethod', params)
     })
     .then((response) => {
-      this.emit('job:progress', { id: job, log: `Creating integration` })
+      this.emit('job:progress', { id: job, log: 'Creating integration' })
       var params = {
         restApiId: api.id,
         resourceId: resourceId,
@@ -198,12 +196,12 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
               "body" : $input.json('$')
             }
           `
-        },
+        }
       }
       return promisify(apigateway, 'putIntegration', params)
     })
     .then(() => {
-      this.emit('job:progress', { id: job, log: `Creating integration response` })
+      this.emit('job:progress', { id: job, log: 'Creating integration response' })
       var params = {
         httpMethod: endpoint.method,
         resourceId: resourceId,
@@ -211,7 +209,7 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
         statusCode: '200',
         responseParameters: {},
         responseTemplates: {},
-        selectionPattern: '.*',
+        selectionPattern: '.*'
       }
       if (endpoint.output === 'html') {
         params.responseTemplates['text/html'] = '$input.path(\'$.html\')'
@@ -219,14 +217,14 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
       return promisify(apigateway, 'putIntegrationResponse', params)
     })
     .then(() => {
-      this.emit('job:progress', { id: job, log: `Creating method response` })
+      this.emit('job:progress', { id: job, log: 'Creating method response' })
       var params = {
         httpMethod: endpoint.method,
         resourceId: resourceId,
         restApiId: api.id,
         statusCode: '200',
         responseModels: {},
-        responseParameters: {},
+        responseParameters: {}
       }
       if (endpoint.output === 'html') {
         params.responseModels['text/html'] = 'Empty'
@@ -242,19 +240,19 @@ Backbeam.prototype.apiSyncEndpoint = function(params, syncFunction) {
     })
 }
 
-Backbeam.prototype.apiListStages = function() {
+Backbeam.prototype.apiListStages = function () {
   var apigateway = new AWS.APIGateway()
   return this.readConfig()
     .then((data) => promisify(apigateway, 'getStages', { restApiId: data.api.id }))
 }
 
-Backbeam.prototype.apiCreateStage = function(params) {
+Backbeam.prototype.apiCreateStage = function (params) {
   var apigateway = new AWS.APIGateway()
   return this.readConfig()
     .then((data) => {
       var options = {
         restApiId: data.api.id,
-        stageName: params.name,
+        stageName: params.name
       }
       return promisify(apigateway, 'createDeployment', options)
     })

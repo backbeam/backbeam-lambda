@@ -1,12 +1,11 @@
-var uuid = require('node-uuid')
 var AWS = require('aws-sdk')
 
 import Backbeam from './'
 import promisify from './utils/promisify'
 import sanitize from './utils/sanitize'
 
-function sanitizeParams(params) {
-  return sanitize(params, {
+function sanitizeParams (params) {
+  var copy = sanitize(params, {
     name: 'string',
     hashKeyName: 'string',
     hashKeyType: 'string',
@@ -15,13 +14,13 @@ function sanitizeParams(params) {
     readCapacity: 'number',
     writeCapacity: 'number',
     localIndexes: 'array',
-    globalIndexes: 'array',
+    globalIndexes: 'array'
   })
   params.localIndexes = params.localIndexes.map((index) => (
     sanitize(index, {
       name: 'string',
       rangeKeyName: 'string',
-      rangeKeyType: 'string',
+      rangeKeyType: 'string'
     })
   ))
   params.globalIndexes = params.globalIndexes.map((index) => (
@@ -32,24 +31,25 @@ function sanitizeParams(params) {
       rangeKeyName: 'string',
       rangeKeyType: 'string',
       readCapacity: 'number',
-      writeCapacity: 'number',
+      writeCapacity: 'number'
     })
   ))
+  return copy
 }
 
-Backbeam.prototype._findTable = function(data, params) {
-  return data.dynamo.tables.find(table => {
+Backbeam.prototype._findTable = function (data, params) {
+  return data.dynamo.tables.find((table) => {
     return table.name === params.name
   })
 }
 
-Backbeam.prototype.dynamoCreateTable = function(params) {
+Backbeam.prototype.dynamoCreateTable = function (params) {
   return Promise.resolve()
     .then(() => {
       params = sanitizeParams(params)
       return this.readConfig()
     })
-    .then(data => {
+    .then((data) => {
       var table = this._findTable(data, params)
       if (table) {
         return Promise.reject(new Error(`A table named ${params.name} already exists`))
@@ -61,14 +61,14 @@ Backbeam.prototype.dynamoCreateTable = function(params) {
     .then(() => this.dynamoSyncTable(params, this.localDynamo()))
 }
 
-Backbeam.prototype.dynamoEditTable = function(params) {
+Backbeam.prototype.dynamoEditTable = function (params) {
   var table
   return Promise.resolve()
     .then(() => {
       params = sanitizeParams(params)
       return this.readConfig()
     })
-    .then(data => {
+    .then((data) => {
       table = this._findTable(data, params)
       if (!table) {
         return Promise.reject(new Error(`No table named ${params.name} found`))
@@ -82,9 +82,9 @@ Backbeam.prototype.dynamoEditTable = function(params) {
     })
 }
 
-Backbeam.prototype.dynamoDeleteTable = function(params) {
+Backbeam.prototype.dynamoDeleteTable = function (params) {
   return this.readConfig()
-    .then(data => {
+    .then((data) => {
       var tables = data.dynamo.tables
       var table = this._findTable(data, params)
       if (!table) {
@@ -99,43 +99,43 @@ Backbeam.prototype.dynamoDeleteTable = function(params) {
     })
 }
 
-Backbeam.prototype.localDynamo = function() {
+Backbeam.prototype.localDynamo = function () {
   if (!this._localDynamo) {
     this._localDynamo = new AWS.DynamoDB({
       endpoint: 'http://localhost:4567',
-      region: 'local',
+      region: 'local'
     })
   }
   return this._localDynamo
 }
 
-Backbeam.prototype.remoteDynamo = function() {
+Backbeam.prototype.remoteDynamo = function () {
   if (!this._remoteDynamo || this._remoteDynamoRegion !== this.getRegion()) {
     this._remoteDynamoRegion = this.getRegion()
     this._remoteDynamo = new AWS.DynamoDB({
-      region: this.getRegion(),
+      region: this.getRegion()
     })
   }
   return this._remoteDynamo
 }
 
-Backbeam.prototype._dynamoDescribeTable = function(tableName, dynamo) {
+Backbeam.prototype._dynamoDescribeTable = function (tableName, dynamo) {
   return new Promise((resolve, reject) => {
-    dynamo.describeTable({ TableName: tableName }, function(err, data) {
+    dynamo.describeTable({ TableName: tableName }, (err, data) => {
       err && err.code !== 'ResourceNotFoundException' ? reject(err) : resolve(data && data.Table)
     })
   })
 }
 
-Backbeam.prototype._dynamoDeleteTable = function(tableName, dynamo) {
+Backbeam.prototype._dynamoDeleteTable = function (tableName, dynamo) {
   return new Promise((resolve, reject) => {
-    dynamo.describeTable({ TableName: tableName }, function(err, data) {
+    dynamo.describeTable({ TableName: tableName }, (err, data) => {
       err && err.code !== 'ResourceNotFoundException' ? reject(err) : resolve(data)
     })
   })
 }
 
-Backbeam.prototype.dynamoSyncTable = function(table, dynamo) {
+Backbeam.prototype.dynamoSyncTable = function (table, dynamo) {
   var job = this._random()
   this.emit('job:start', { id: job, name: `Synching dynamo table ${table.name}`, steps: 2 })
   return this._dynamoDescribeTable(table.name, dynamo)
@@ -150,25 +150,25 @@ Backbeam.prototype.dynamoSyncTable = function(table, dynamo) {
     })
 }
 
-Backbeam.prototype._dynamoEditTableParams = function(table, oldTable) {
+Backbeam.prototype._dynamoEditTableParams = function (table, oldTable) {
   var params = {
     'TableName': table.name,
-    'AttributeDefinitions': [],
+    'AttributeDefinitions': []
   }
 
-  function appendAttribute(name, type) {
-    var attr = params.AttributeDefinitions.find((attr) => attr.AttributeName === name )
+  function appendAttribute (name, type) {
+    var attr = params.AttributeDefinitions.find((attr) => attr.AttributeName === name)
     if (attr) return
     params.AttributeDefinitions.push({
       'AttributeName': name,
-      'AttributeType': type.substring(0, 1).toUpperCase(),
+      'AttributeType': type.substring(0, 1).toUpperCase()
     })
   }
 
   if (!oldTable) {
     params.KeySchema = [{
       'AttributeName': table.hashKeyName,
-      'KeyType': 'HASH',
+      'KeyType': 'HASH'
     }]
     appendAttribute(table.hashKeyName, table.hashKeyType)
 
@@ -176,17 +176,17 @@ Backbeam.prototype._dynamoEditTableParams = function(table, oldTable) {
       appendAttribute(table.rangeKeyName, table.rangeKeyType)
       params.KeySchema.push({
         'AttributeName': table.rangeKeyName,
-        'KeyType': 'RANGE',
+        'KeyType': 'RANGE'
       })
     }
   }
 
-  var oldIndexes = (oldTable && oldTable.GlobalSecondaryIndexes) || []
+  var oldIndexes = (oldTable && oldTable.GlobalSecondaryIndexes) || []
   var arr = table.globalIndexes.map((index) => {
     var oldIndex = oldIndexes.find((ind) => ind.IndexName === index.name)
-    if (oldIndex
-        && oldIndex.ProvisionedThroughput.ReadCapacityUnits === index.readCapacity
-        && oldIndex.ProvisionedThroughput.WriteCapacityUnits === index.writeCapacity) {
+    if (oldIndex &&
+        oldIndex.ProvisionedThroughput.ReadCapacityUnits === index.readCapacity &&
+        oldIndex.ProvisionedThroughput.WriteCapacityUnits === index.writeCapacity) {
       return null
     }
 
@@ -194,24 +194,24 @@ Backbeam.prototype._dynamoEditTableParams = function(table, oldTable) {
       'IndexName': index.name,
       'ProvisionedThroughput': {
         'ReadCapacityUnits': index.readCapacity,
-        'WriteCapacityUnits': index.writeCapacity,
+        'WriteCapacityUnits': index.writeCapacity
       }
     }
     if (!oldIndex) {
       appendAttribute(index.hashKeyName, index.hashKeyType)
       obj.KeySchema = [{
         'AttributeName': index.hashKeyName,
-        'KeyType': 'HASH',
+        'KeyType': 'HASH'
       }]
       if (index.rangeKeyName) {
         appendAttribute(index.rangeKeyName, index.rangeKeyType)
         obj.KeySchema.push({
           'AttributeName': index.rangeKeyName,
-          'KeyType': 'RANGE',
+          'KeyType': 'RANGE'
         })
       }
       obj.Projection = {
-        'ProjectionType': 'ALL',
+        'ProjectionType': 'ALL'
       }
     }
     if (oldTable) {
@@ -229,7 +229,7 @@ Backbeam.prototype._dynamoEditTableParams = function(table, oldTable) {
       .filter((index) => !table.globalIndexes.find((ind) => ind.name === index.IndexName))
       .map((index) => ({
         Delete: {
-          IndexName: index.IndexName,
+          IndexName: index.IndexName
         }
       })
     ))
@@ -247,29 +247,29 @@ Backbeam.prototype._dynamoEditTableParams = function(table, oldTable) {
         'KeySchema': [
           {
             'AttributeName': index.rangeKeyName,
-            'KeyType': 'HASH',
+            'KeyType': 'HASH'
           }
         ],
         'Projection': {
-          'ProjectionType': 'ALL',
-        },
+          'ProjectionType': 'ALL'
+        }
       }
     })
   }
 
-  if (!oldTable
-    || table.readCapacity !== oldTable.ProvisionedThroughput.ReadCapacityUnits
-    || table.writeCapacity !== oldTable.ProvisionedThroughput.WriteCapacityUnits) {
+  if (!oldTable ||
+    table.readCapacity !== oldTable.ProvisionedThroughput.ReadCapacityUnits ||
+    table.writeCapacity !== oldTable.ProvisionedThroughput.WriteCapacityUnits) {
     params.ProvisionedThroughput = {
       'ReadCapacityUnits': table.readCapacity,
-      'WriteCapacityUnits': table.writeCapacity,
+      'WriteCapacityUnits': table.writeCapacity
     }
   }
 
   if (oldTable) {
-    if (!params.ProvisionedThroughput
-      || !params.GlobalSecondaryIndexUpdates
-      || !params.StreamSpecification) {
+    if (!params.ProvisionedThroughput ||
+      !params.GlobalSecondaryIndexUpdates ||
+      !params.StreamSpecification) {
       return null
     }
   }

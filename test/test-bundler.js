@@ -1,8 +1,8 @@
+/* global describe it before */
 var assert = require('assert')
 var fs = require('fs')
 var path = require('path')
 var mkdirp = require('mkdirp')
-var rimraf = require('rimraf')
 var utils = require('./utils')
 var pify = require('pify')
 var exec = pify(require('child_process').exec, { multiArgs: true })
@@ -15,7 +15,6 @@ const output = path.join(dir, 'output.js')
 const lib = path.join(dir, 'node_modules/my_lib/index.js')
 
 describe('Bundler', () => {
-
   before(() => {
     mkdirp.sync(path.join(dir, 'node_modules'))
     mkdirp.sync(path.join(dir, 'node_modules/my_lib'))
@@ -50,5 +49,4 @@ describe('Bundler', () => {
           })
       })
   })
-
 })

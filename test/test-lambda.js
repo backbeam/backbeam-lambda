@@ -1,3 +1,4 @@
+/* global describe it before */
 var utils = require('./utils')
 var backbeam = utils.backbeam()
 var assert = require('assert')
@@ -5,7 +6,6 @@ var assert = require('assert')
 require('./aws-mock')
 
 describe('Lambda methods', () => {
-
   before(() => utils.init())
 
   it('#lambdaCreateFunction', () => {
@@ -22,12 +22,12 @@ describe('Lambda methods', () => {
       .then((data) => {
         var func = backbeam._findFunction(data, params)
         assert.deepEqual(func, {
-          "functionName": "testFunction",
-          "filename": "functions/testFunction.js",
-          "handler": "run",
-          "role": "arn:aws:iam::551937714682:role/lambda_dynamo",
-          "memory": 128,
-          "timeout": 3
+          'functionName': 'testFunction',
+          'filename': 'functions/testFunction.js',
+          'handler': 'run',
+          'role': 'arn:aws:iam::551937714682:role/lambda_dynamo',
+          'memory': 128,
+          'timeout': 3
         })
       })
   })
@@ -46,12 +46,12 @@ describe('Lambda methods', () => {
       .then((data) => {
         var func = backbeam._findFunction(data, params)
         assert.deepEqual(func, {
-          "functionName": "testFunction",
-          "filename": "functions/testFunction.js",
-          "handler": "run",
-          "role": "arn:aws:iam::551937714682:role/lambda_dynamo",
-          "memory": 256,
-          "timeout": 3
+          'functionName': 'testFunction',
+          'filename': 'functions/testFunction.js',
+          'handler': 'run',
+          'role': 'arn:aws:iam::551937714682:role/lambda_dynamo',
+          'memory': 256,
+          'timeout': 3
         })
       })
   })
@@ -82,7 +82,7 @@ describe('Lambda methods', () => {
     var params = {
       method: 'PUT',
       path: '/test',
-      functionName: 'testFunction',
+      functionName: 'testFunction'
     }
     return backbeam.apiCreateEndpoint(params)
       .then(() => backbeam.apiSyncEndpoint(params))
@@ -94,10 +94,9 @@ describe('Lambda methods', () => {
       path: '/test',
       functionName: 'testFunction',
       input: 'html',
-      output: 'html',
+      output: 'html'
     }
     return backbeam.apiCreateEndpoint(params)
       .then(() => backbeam.apiSyncEndpoint(params))
   })
-
 })

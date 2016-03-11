@@ -1,38 +1,35 @@
 var fs = require('fs')
 var path = require('path')
 var AWS = require('aws-sdk')
-var temp = require('temp')
-var _ = require('underscore')
 var ini = require('ini')
 var uuid = require('node-uuid')
 var pify = require('pify')
 var mkdirp = pify(require('mkdirp'))
 
-import dedent from 'dedent'
 import promisify from './utils/promisify'
 
 const EventEmitter = require('events')
 
 export default class Backbeam extends EventEmitter {
 
-  constructor(dir) {
+  constructor (dir) {
     super()
     this.setRegion(this.availableRegions()[0])
     this.setDirectory(dir)
     this.credentialsLoaded = false
   }
 
-  _credentialsPath() {
+  _credentialsPath () {
     var home = require('os').homedir()
     return path.join(home, '.aws/credentials')
   }
 
-  loadCredentials() {
+  loadCredentials () {
     var profile = process.env.AWS_PROFILE || 'default'
     var file = this._credentialsPath()
 
     return promisify(fs, 'readFile', file, 'utf8')
-      .then(data => {
+      .then((data) => {
         let credentials = ini.parse(data)[profile] || {}
         let accessKeyId = credentials.aws_access_key_id
         let secretAccessKey = credentials.aws_secret_access_key
@@ -45,7 +42,7 @@ export default class Backbeam extends EventEmitter {
       })
   }
 
-  saveCredentials(accessKeyId, secretAccessKey, profile='default') {
+  saveCredentials (accessKeyId, secretAccessKey, profile = 'default') {
     var file = this._credentialsPath()
     AWS.config.update({ accessKeyId, secretAccessKey })
 
@@ -55,7 +52,7 @@ export default class Backbeam extends EventEmitter {
         var data = ini.encode({
           [profile]: {
             aws_access_key_id: accessKeyId,
-            aws_secret_access_key: secretAccessKey,
+            aws_secret_access_key: secretAccessKey
           }
         })
         return promisify(fs, 'writeFile', file, data)
@@ -66,67 +63,67 @@ export default class Backbeam extends EventEmitter {
       })
   }
 
-  _random() {
+  _random () {
     return uuid.v4()
   }
 
-  getDirectory() {
+  getDirectory () {
     return this._dir
   }
 
-  setRegion(region) {
+  setRegion (region) {
     AWS.config.update({ region })
     this._region = region
   }
 
-  getRegion() {
+  getRegion () {
     return this._region
   }
 
-  _fullpath(filename) {
+  _fullpath (filename) {
     return path.join(this._dir, filename)
   }
 
-  _parseFile(filename) {
+  _parseFile (filename) {
     var file = this._fullpath(filename)
     return promisify(fs, 'readFile', file)
-      .then(data => JSON.parse(data))
+      .then((data) => JSON.parse(data))
   }
 
-  _writeFile(filename, data, override=true) {
+  _writeFile (filename, data, override = true) {
     var file = path.join(this._dir, filename)
-    var data = typeof data !== 'string' ? JSON.stringify(data, null, 2) : data
+    var options = typeof data !== 'string' ? JSON.stringify(data, null, 2) : data
     if (!override) {
       return new Promise((resolve) => fs.exists(file, resolve))
         .then((exists) => {
           if (exists) return
-          return promisify(fs, 'writeFile', file, data)
+          return promisify(fs, 'writeFile', file, options)
         })
     }
-    return promisify(fs, 'writeFile', file, data)
+    return promisify(fs, 'writeFile', file, options)
   }
 
-  _deleteFile(filename) {
+  _deleteFile (filename) {
     var file = path.join(this._dir, filename)
     return promisify(fs, 'unlink', file)
   }
 
-  setDirectory(dir) {
+  setDirectory (dir) {
     this._dir = dir
     this.emit('directory_changed')
   }
 
-  writeConfig(data) {
+  writeConfig (data) {
     return this._writeFile('backbeam.json', data)
   }
 
-  readConfig() {
+  readConfig () {
     return this._parseFile('backbeam.json')
   }
 
   // see http://docs.aws.amazon.com/general/latest/gr/rande.html#apigateway_region
   // and http://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
-  availableRegions() {
+  availableRegions () {
     return ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
   }
 

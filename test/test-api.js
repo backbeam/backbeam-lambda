@@ -1,3 +1,4 @@
+/* global describe it before */
 var utils = require('./utils')
 var backbeam = utils.backbeam()
 var assert = require('assert')
@@ -5,14 +6,13 @@ var assert = require('assert')
 require('./aws-mock')
 
 describe('API methods', () => {
-
   before(() => utils.init())
 
   it('#apiCreateEndpoint', () => {
     var params = {
       method: 'POST',
       path: '/test',
-      functionName: 'home',
+      functionName: 'home'
     }
     return backbeam.apiCreateEndpoint(params)
       .then(() => backbeam.readConfig())
@@ -21,7 +21,7 @@ describe('API methods', () => {
         assert.deepEqual(endpoint, {
           method: 'POST',
           path: '/test',
-          functionName: 'home',
+          functionName: 'home'
         })
       })
   })
@@ -30,7 +30,7 @@ describe('API methods', () => {
     var params = {
       method: 'POST',
       path: '/test',
-      functionName: 'home',
+      functionName: 'home'
     }
     return backbeam.apiCreateEndpoint(params)
       .then(() => Promise.reject('Should have failed to create endpoint'))
@@ -43,12 +43,12 @@ describe('API methods', () => {
     var old = {
       method: 'POST',
       path: '/test',
-      functionName: 'home',
+      functionName: 'home'
     }
     var params = {
       method: 'PUT',
       path: '/test/foo',
-      functionName: 'home',
+      functionName: 'home'
     }
     return backbeam.apiEditEndpoint(old, params)
       .then(() => backbeam.readConfig())
@@ -57,7 +57,7 @@ describe('API methods', () => {
         assert.deepEqual(endpoint, {
           method: 'PUT',
           path: '/test/foo',
-          functionName: 'home',
+          functionName: 'home'
         })
         var oldend = backbeam._findEndpoint(data, old)
         assert.ok(!oldend)
@@ -66,24 +66,24 @@ describe('API methods', () => {
 
   it('#apiList', () => {
     return backbeam.apiList()
-      .then(result => assert.ok(result))
+      .then((result) => assert.ok(result))
   })
 
   it('#apiListStages', () => {
     return backbeam.apiListStages()
-      .then(result => assert.ok(result))
+      .then((result) => assert.ok(result))
   })
 
   it('#apiCreateStage', () => {
     return backbeam.apiCreateStage({ name: 'dev' })
-      .then(result => assert.ok(result))
+      .then((result) => assert.ok(result))
   })
 
   it('#apiDeleteEndpoint', () => {
     var params = {
       method: 'PUT',
       path: '/test/foo',
-      functionName: 'home',
+      functionName: 'home'
     }
     return backbeam.apiDeleteEndpoint(params)
       .then(() => backbeam.readConfig())
@@ -92,5 +92,4 @@ describe('API methods', () => {
         assert.ok(!endpoint)
       })
   })
-
 })

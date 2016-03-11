@@ -1,14 +1,14 @@
-export default function(obj, validations) {
+export default function (obj, validations) {
   var copy = {}
   Object.keys(validations).forEach((key) => {
     let value = obj[key]
     let validation = validations[key]
     var optional = false
-    if (validation.substring(validation.length-1) === '?') {
+    if (validation.substring(validation.length - 1) === '?') {
       if (value == null) {
         return
       }
-      validation = validation.substring(validation.length-1)
+      validation = validation.substring(validation.length - 1)
       optional = true
     }
 
