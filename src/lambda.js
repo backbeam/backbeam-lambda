@@ -130,7 +130,7 @@ Backbeam.prototype.lambdaSyncFunction = function (functionName, currentJob) {
           FunctionName: func.functionName,
           Handler: 'index.' + func.handler,
           Role: func.role,
-          Runtime: 'nodejs',
+          Runtime: 'nodejs4.3',
           Description: func.description,
           MemorySize: func.memory,
           Publish: false,

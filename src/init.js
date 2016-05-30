@@ -73,7 +73,7 @@ Backbeam.prototype.init = function (dir, params) {
         },
         license: 'ISC',
         dependencies: {
-          'aws-sdk': '2.2.3' // see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
+          'aws-sdk': '2.3.8' // see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
         },
         devDependencies: {
           'backbeam-lambda': '^' + require('../package.json').version,
@@ -84,7 +84,7 @@ Backbeam.prototype.init = function (dir, params) {
         },
         keywords: ['backbeam', 'lambda', 'aws'],
         engines: {
-          node: '0.10.36' // see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
+          node: '4.3.2' // see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
         }
       }
       return this._writeFile('package.json', data, false)

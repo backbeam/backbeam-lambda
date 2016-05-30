@@ -120,7 +120,7 @@ export default class Backbeam extends EventEmitter {
   // see http://docs.aws.amazon.com/general/latest/gr/rande.html#apigateway_region
   // and http://docs.aws.amazon.com/general/latest/gr/rande.html#lambda_region
   availableRegions () {
-    return ['us-east-1', 'us-west-2', 'eu-west-1', 'ap-northeast-1']
+    return ['us-east-1', 'us-west-2', 'eu-west-1', 'eu-central-1', 'ap-northeast-1']
   }
 
 }
