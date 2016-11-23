@@ -40,12 +40,12 @@
     "mkdirp": "^0.5.1",
     "multiline": "^1.0.2",
     "node-errors": "^0.2.0",
-    "node-uuid": "^1.4.7",
     "nyc": "^5.3.0",
     "pify": "^2.3.0",
     "pync": "^1.0.0",
     "temp": "^0.8.3",
     "underscore": "^1.8.3",
+    "uuid": "^3.0.0",
     "webpack": "^1.12.11",
     "yargs": "^3.30.0"
   },

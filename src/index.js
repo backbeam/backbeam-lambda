@@ -2,7 +2,7 @@ var fs = require('fs')
 var path = require('path')
 var AWS = require('aws-sdk')
 var ini = require('ini')
-var uuid = require('node-uuid')
+var uuid = require('uuid')
 var pify = require('pify')
 var mkdirp = pify(require('mkdirp'))
 
